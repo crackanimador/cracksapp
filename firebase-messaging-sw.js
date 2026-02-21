@@ -1,8 +1,7 @@
-// Firebase Service Worker para notificaciones en background
+// Service Worker optimizado para móvil
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
-// Configuración Firebase
 firebase.initializeApp({
     apiKey: "AIzaSyBgPt2RFwc2o6rgC2II-cwJ_0J-TyO0eLg",
     authDomain: "studio-979184038-173c2.firebaseapp.com",
@@ -14,10 +13,10 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Manejar mensajes en background
+// Background messages
 messaging.onBackgroundMessage((payload) => {
-    console.log('📩 Mensaje en background:', payload);
-
+    console.log('📩 Background:', payload);
+    
     const notificationTitle = payload.notification?.title || 'GhostChat';
     const notificationOptions = {
         body: payload.notification?.body || 'Nuevo mensaje',
@@ -26,98 +25,77 @@ messaging.onBackgroundMessage((payload) => {
         vibrate: [200, 100, 200],
         tag: payload.data?.chat_id || 'ghostchat',
         data: payload.data,
-        actions: [
-            { action: 'open', title: 'Abrir' },
-            { action: 'close', title: 'Cerrar' }
-        ],
-        requireInteraction: false,
-        silent: false
+        silent: false,
+        requireInteraction: false
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// Manejar clic en notificación
+// Click en notificación
 self.addEventListener('notificationclick', (event) => {
-    console.log('🔔 Clic en notificación:', event);
-    
     event.notification.close();
-
-    if (event.action === 'close') {
-        return;
-    }
-
+    
     const chatId = event.notification.data?.chat_id;
     const urlToOpen = chatId ? `/?chat=${chatId}` : '/';
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
-            .then((windowClients) => {
-                // Si hay una ventana abierta, enfocarla
-                for (const client of windowClients) {
-                    if (client.url === urlToOpen && 'focus' in client) {
-                        return client.focus();
-                    }
+            .then((clients) => {
+                if (clients.length > 0) {
+                    return clients[0].focus();
                 }
-                // Si no hay ventana, abrir una nueva
-                if (clients.openWindow) {
-                    return clients.openWindow(urlToOpen);
-                }
+                return self.clients.openWindow(urlToOpen);
             })
     );
 });
 
-// Cache básico para PWA
-const CACHE_NAME = 'ghostchat-v1';
+// Cache mínimo para PWA (evitar problemas de memoria)
+const CACHE_NAME = 'ghostchat-v2';
 const urlsToCache = [
     '/',
     '/index.html',
     '/manifest.json',
     '/favicon.png',
-    '/icons/Icon-192.png',
-    '/icons/Icon-512.png'
+    '/icons/Icon-192.png'
 ];
 
-// Instalar Service Worker y cachear archivos
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('📦 Cacheando recursos...');
-                return cache.addAll(urlsToCache);
-            })
+            .then(cache => cache.addAll(urlsToCache))
             .then(() => self.skipWaiting())
     );
 });
 
-// Activar y limpiar caches viejos
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        Promise.all([
-            caches.keys().then((cacheNames) => {
-                return Promise.all(
-                    cacheNames.map((cacheName) => {
-                        if (cacheName !== CACHE_NAME) {
-                            console.log('🗑️ Eliminando cache viejo:', cacheName);
-                            return caches.delete(cacheName);
-                        }
-                    })
-                );
-            }),
-            clients.claim()
-        ])
+        caches.keys().then(keys => 
+            Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))
+        ).then(() => clients.claim())
     );
 });
 
-// Interceptar peticiones y servir desde cache
+// Fetch strategy: network first, then cache
 self.addEventListener('fetch', (event) => {
+    if (event.request.url.includes('firebase') || event.request.url.includes('googleapis')) {
+        // No cachear peticiones a Firebase
+        event.respondWith(fetch(event.request));
+        return;
+    }
+    
     event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                if (response) {
-                    return response;
+        fetch(event.request)
+            .then(response => {
+                // Cachear solo respuestas exitosas
+                if (response.status === 200) {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, responseClone);
+                    });
                 }
-                return fetch(event.request);
+                return response;
             })
+            .catch(() => caches.match(event.request))
     );
 });

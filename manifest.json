@@ -1,13 +1,14 @@
 {
   "name": "GhostChat",
   "short_name": "GhostChat",
-  "description": "Chat anónimo seguro con notificaciones en tiempo real",
+  "description": "Chat anónimo seguro",
   "theme_color": "#8A2BE2",
   "background_color": "#090909",
   "display": "standalone",
   "orientation": "portrait",
   "scope": "/",
   "start_url": "/",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icons/Icon-192.png",
@@ -21,5 +22,8 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["social", "communication"],
+  "lang": "es",
+  "dir": "ltr"
 }

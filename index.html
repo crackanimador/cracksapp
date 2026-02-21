@@ -3,69 +3,117 @@
 <head>
     <base href="/">
     <meta charset="UTF-8">
-    <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
     <meta name="description" content="GhostChat - Chat anónimo seguro">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- PWA -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GhostChat">
     <meta name="theme-color" content="#8A2BE2">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- Icons -->
     <link rel="apple-touch-icon" href="icons/Icon-192.png">
     <link rel="icon" type="image/png" href="favicon.png"/>
     <link rel="manifest" href="manifest.json">
+    
     <title>GhostChat</title>
+    
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-text-size-adjust: 100%;
         }
+        
         body {
             background: #090909;
             overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
+        
         #loading {
             position: fixed;
-            inset: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background: linear-gradient(135deg, #090909 0%, #1a1a2e 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
             z-index: 9999;
+            transition: opacity 0.3s ease-out;
         }
+        
         .ghost-icon {
-            font-size: 80px;
+            font-size: min(80px, 20vw);
             animation: float 2s ease-in-out infinite;
+            margin-bottom: 20px;
         }
+        
         @keyframes float {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-20px); }
         }
+        
         .spinner {
-            width: 50px;
-            height: 50px;
+            width: min(50px, 15vw);
+            height: min(50px, 15vw);
             border: 4px solid rgba(138, 43, 226, 0.2);
             border-top-color: #8A2BE2;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-top: 30px;
+            margin: 20px 0;
         }
+        
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
         .loading-text {
             color: #8A2BE2;
-            margin-top: 20px;
-            font-size: 18px;
+            font-size: clamp(16px, 5vw, 24px);
             font-weight: 500;
+            text-align: center;
+            padding: 0 20px;
         }
+        
         .loading-subtitle {
             color: #666;
-            margin-top: 8px;
-            font-size: 12px;
+            margin-top: 10px;
+            font-size: clamp(12px, 3vw, 14px);
+            text-align: center;
+            padding: 0 20px;
+        }
+        
+        .error-message {
+            color: #ff4444;
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+            padding: 0 20px;
+        }
+        
+        #flutter-container {
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.3s ease-in;
+        }
+        
+        #flutter-container.visible {
+            opacity: 1;
         }
     </style>
 </head>
@@ -76,12 +124,12 @@
         <div class="spinner"></div>
         <div class="loading-text">GhostChat</div>
         <div class="loading-subtitle">Conectando de forma segura...</div>
+        <div class="error-message" id="error-message"></div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
-    
+    <div id="flutter-container"></div>
+
+    <!-- Firebase SDK (carga diferida para móvil) -->
     <script>
         // Configuración Firebase
         const firebaseConfig = {
@@ -93,133 +141,188 @@
             appId: "1:276076090787:web:5c9f7ab3b441c9d0d93616"
         };
 
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-
         // Variables globales
-        window.firebaseMessaging = null;
         window.fcmToken = null;
         window.notificationPermission = 'default';
-
-        // Inicializar notificaciones
-        if ('Notification' in window && 'serviceWorker' in navigator) {
-            // Registrar Service Worker primero
-            navigator.serviceWorker.register('firebase-messaging-sw.js')
-                .then((registration) => {
-                    console.log('✅ Service Worker registrado:', registration);
-                    
-                    // Inicializar messaging con el SW
-                    window.firebaseMessaging = firebase.messaging();
-                    window.firebaseMessaging.useServiceWorker(registration);
-                    
-                    // Solicitar permisos
-                    return Notification.requestPermission();
-                })
-                .then((permission) => {
-                    window.notificationPermission = permission;
-                    console.log('📬 Permiso de notificaciones:', permission);
-                    
-                    if (permission === 'granted' && window.firebaseMessaging) {
-                        // Obtener token FCM
-                        return window.firebaseMessaging.getToken({
-                            vapidKey: 'BJyOqkC6hvuUbwyQ7XIaODqBnu6nzQRTJisQe-ppZF10crJEeRmrJHkG4_zB97K0tm6xd8_Q-799RxyPgHRgc84'
-                        });
-                    }
-                })
-                .then((token) => {
-                    if (token) {
-                        window.fcmToken = token;
-                        console.log('🔑 Token FCM:', token);
-                    }
-                })
-                .catch((err) => {
-                    console.error('❌ Error:', err);
-                });
-
-            // Escuchar mensajes en foreground
-            if (window.firebaseMessaging) {
-                window.firebaseMessaging.onMessage((payload) => {
-                    console.log('📩 Mensaje en foreground:', payload);
-                    
-                    // Mostrar notificación solo si la app no está en foco
-                    if (document.visibilityState === 'hidden') {
-                        const title = payload.notification?.title || 'GhostChat';
-                        const options = {
-                            body: payload.notification?.body || 'Nuevo mensaje',
-                            icon: 'icons/Icon-192.png',
-                            badge: 'icons/Icon-192.png',
-                            vibrate: [200, 100, 200],
-                            tag: payload.data?.chat_id || 'ghostchat',
-                            data: payload.data
-                        };
-                        new Notification(title, options);
-                    }
-                });
+        let firebaseInitialized = false;
+        
+        // Detectar si es móvil
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // Función para cargar Firebase de forma diferida
+        async function loadFirebase() {
+            if (firebaseInitialized) return;
+            
+            try {
+                // Cargar scripts de Firebase
+                await loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+                await loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
+                
+                // Inicializar Firebase
+                firebase.initializeApp(firebaseConfig);
+                
+                // Inicializar notificaciones solo si no es móvil o si el usuario lo permite
+                if (!isMobile || (isMobile && await checkMobileNotifications())) {
+                    initializeNotifications();
+                }
+                
+                firebaseInitialized = true;
+                console.log('✅ Firebase inicializado');
+            } catch (error) {
+                console.error('Error cargando Firebase:', error);
+                showError('Error de conexión. Intentando modo offline...');
             }
         }
-
-        // Funciones para Flutter
-        window.getFCMToken = function() {
-            return window.fcmToken || null;
-        };
-
-        window.getNotificationPermission = function() {
-            return window.notificationPermission;
-        };
-
-        window.requestNotificationPermission = async function() {
+        
+        // Cargar script dinámicamente
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Verificar soporte de notificaciones en móvil
+        async function checkMobileNotifications() {
+            if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+                return false;
+            }
+            
             try {
                 const permission = await Notification.requestPermission();
-                window.notificationPermission = permission;
+                return permission === 'granted';
+            } catch {
+                return false;
+            }
+        }
+        
+        // Inicializar notificaciones
+        function initializeNotifications() {
+            if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+                return;
+            }
+            
+            navigator.serviceWorker.register('firebase-messaging-sw.js')
+                .then((registration) => {
+                    console.log('✅ Service Worker registrado');
+                    
+                    if (firebase.messaging.isSupported()) {
+                        const messaging = firebase.messaging();
+                        messaging.useServiceWorker(registration);
+                        
+                        // Solo obtener token si ya tenemos permiso
+                        if (Notification.permission === 'granted') {
+                            return messaging.getToken({
+                                vapidKey: 'BJyOqkC6hvuUbwyQ7XIaODqBnu6nzQRTJisQe-ppZF10crJEeRmrJHkG4_zB97K0tm6xd8_Q-799RxyPgHRgc84'
+                            }).then(token => {
+                                window.fcmToken = token;
+                                console.log('🔑 Token FCM:', token);
+                            });
+                        }
+                    }
+                })
+                .catch(err => console.error('Error SW:', err));
+        }
+        
+        // Mostrar error
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+            }
+        }
+        
+        // Ocultar loading y mostrar app
+        function hideLoading() {
+            const loading = document.getElementById('loading');
+            const container = document.getElementById('flutter-container');
+            
+            if (loading) {
+                loading.style.opacity = '0';
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                    if (container) {
+                        container.classList.add('visible');
+                    }
+                }, 300);
+            }
+        }
+        
+        // Inicialización
+        window.addEventListener('load', () => {
+            // Cargar Firebase después de que la app esté lista
+            setTimeout(loadFirebase, 1000);
+        });
+        
+        // Evento de Flutter
+        window.addEventListener('flutter-first-frame', hideLoading);
+        
+        // Timeout de seguridad
+        setTimeout(() => {
+            if (document.getElementById('loading').style.display !== 'none') {
+                hideLoading();
+            }
+        }, 5000);
+        
+        // Prevenir reinicio en móvil
+        if (isMobile) {
+            // Prevenir gestos de navegación
+            document.addEventListener('touchstart', (e) => {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            // Prevenir pull-to-refresh
+            document.body.style.overscrollBehavior = 'none';
+        }
+        
+        // Funciones para Flutter
+        window.getFCMToken = () => window.fcmToken;
+        window.getNotificationPermission = () => Notification.permission;
+        
+        window.requestNotificationPermission = async () => {
+            if (!('Notification' in window)) return 'denied';
+            
+            try {
+                const permission = await Notification.requestPermission();
                 
-                if (permission === 'granted' && window.firebaseMessaging) {
-                    const token = await window.firebaseMessaging.getToken({
+                if (permission === 'granted' && firebase.messaging.isSupported()) {
+                    const messaging = firebase.messaging();
+                    const token = await messaging.getToken({
                         vapidKey: 'BJyOqkC6hvuUbwyQ7XIaODqBnu6nzQRTJisQe-ppZF10crJEeRmrJHkG4_zB97K0tm6xd8_Q-799RxyPgHRgc84'
                     });
                     window.fcmToken = token;
                 }
                 
                 return permission;
-            } catch (error) {
-                console.error('Error solicitando permiso:', error);
+            } catch {
                 return 'denied';
             }
         };
-
-        window.showLocalNotification = function(title, body, chatId) {
+        
+        window.showLocalNotification = (title, body, chatId) => {
             if (Notification.permission === 'granted') {
-                new Notification(title, {
-                    body: body,
-                    icon: 'icons/Icon-192.png',
-                    badge: 'icons/Icon-192.png',
-                    tag: chatId || 'ghostchat',
-                    vibrate: [200, 100, 200]
-                });
+                try {
+                    new Notification(title, {
+                        body: body,
+                        icon: 'icons/Icon-192.png',
+                        tag: chatId || 'ghostchat',
+                        vibrate: [200, 100, 200],
+                        silent: false
+                    });
+                } catch (e) {
+                    console.error('Error mostrando notificación:', e);
+                }
             }
         };
-
-        // Ocultar loading cuando Flutter esté listo
-        window.addEventListener('flutter-first-frame', function() {
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.style.transition = 'opacity 0.5s ease-out';
-                loading.style.opacity = '0';
-                setTimeout(() => loading.remove(), 500);
-            }
-        });
-
-        // Fallback para loading
-        setTimeout(function() {
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.style.transition = 'opacity 0.5s ease-out';
-                loading.style.opacity = '0';
-                setTimeout(() => loading.remove(), 500);
-            }
-        }, 5000);
     </script>
 
-    <!-- Flutter Bootstrap -->
-    <script src="flutter_bootstrap.js" async></script>
+    <!-- Flutter Bootstrap (carga al final) -->
+    <script src="flutter_bootstrap.js" defer></script>
 </body>
 </html>
