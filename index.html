@@ -1,328 +1,174 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <base href="/">
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
-    <meta name="description" content="GhostChat - Chat anónimo seguro">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
-    <!-- PWA Meta Tags -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="GhostChat">
-    <meta name="theme-color" content="#8A2BE2">
-    <meta name="format-detection" content="telephone=no">
-    
-    <!-- Icons -->
-    <link rel="apple-touch-icon" href="icons/Icon-192.png">
-    <link rel="icon" type="image/png" href="favicon.png"/>
-    <link rel="manifest" href="manifest.json">
-    
-    <title>GhostChat</title>
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            -webkit-text-size-adjust: 100%;
-        }
-        
-        body {
-            background: #090909;
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        #loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, #090909 0%, #1a1a2e 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            z-index: 9999;
-            transition: opacity 0.3s ease-out;
-        }
-        
-        .ghost-icon {
-            font-size: min(80px, 20vw);
-            animation: float 2s ease-in-out infinite;
-            margin-bottom: 20px;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-        
-        .spinner {
-            width: min(50px, 15vw);
-            height: min(50px, 15vw);
-            border: 4px solid rgba(138, 43, 226, 0.2);
-            border-top-color: #8A2BE2;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px 0;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .loading-text {
-            color: #8A2BE2;
-            font-size: clamp(16px, 5vw, 24px);
-            font-weight: 500;
-            text-align: center;
-            padding: 0 20px;
-        }
-        
-        .loading-subtitle {
-            color: #666;
-            margin-top: 10px;
-            font-size: clamp(12px, 3vw, 14px);
-            text-align: center;
-            padding: 0 20px;
-        }
-        
-        .error-message {
-            color: #ff4444;
-            margin-top: 20px;
-            font-size: 14px;
-            text-align: center;
-            display: none;
-            padding: 0 20px;
-        }
-        
-        #flutter-container {
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            transition: opacity 0.3s ease-in;
-        }
-        
-        #flutter-container.visible {
-            opacity: 1;
-        }
-    </style>
+  <!-- Base para Flutter Web -->
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <meta name="description" content="GhostChat - Chat anónimo seguro">
+
+  <!-- Viewport y PWA -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GhostChat">
+  <meta name="theme-color" content="#8A2BE2">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- Iconos y manifest -->
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="manifest" href="manifest.json">
+
+  <title>GhostChat</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      background: #090909;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, #090909 0%, #1a1a2e 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 9999;
+      transition: opacity 0.3s ease-out;
+    }
+
+    .ghost-icon {
+      font-size: min(80px, 20vw);
+      animation: float 2s ease-in-out infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    .spinner {
+      width: min(50px, 15vw);
+      height: min(50px, 15vw);
+      border: 4px solid rgba(138, 43, 226, 0.2);
+      border-top-color: #8A2BE2;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 20px 0;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: #8A2BE2;
+      font-size: clamp(16px, 5vw, 24px);
+      font-weight: 500;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .loading-subtitle {
+      color: #666;
+      margin-top: 10px;
+      font-size: clamp(12px, 3vw, 14px);
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .error-message {
+      color: #ff4444;
+      margin-top: 20px;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+      padding: 0 20px;
+    }
+
+    #flutter-container {
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 0.3s ease-in;
+    }
+
+    #flutter-container.visible {
+      opacity: 1;
+    }
+  </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loading">
-        <div class="ghost-icon">👻</div>
-        <div class="spinner"></div>
-        <div class="loading-text">GhostChat</div>
-        <div class="loading-subtitle">Conectando de forma segura...</div>
-        <div class="error-message" id="error-message"></div>
-    </div>
+  <!-- Pantalla de carga -->
+  <div id="loading">
+    <div class="ghost-icon">👻</div>
+    <div class="spinner"></div>
+    <div class="loading-text">GhostChat</div>
+    <div class="loading-subtitle">Conectando de forma segura...</div>
+    <div class="error-message" id="error-message"></div>
+  </div>
 
-    <div id="flutter-container"></div>
+  <!-- Contenedor donde Flutter inyecta la app -->
+  <div id="flutter-container"></div>
 
-    <!-- Firebase SDK (carga diferida para móvil) -->
-    <script>
-        // Configuración Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBgPt2RFwc2o6rgC2II-cwJ_0J-TyO0eLg",
-            authDomain: "studio-979184038-173c2.firebaseapp.com",
-            projectId: "studio-979184038-173c2",
-            storageBucket: "studio-979184038-173c2.firebasestorage.app",
-            messagingSenderId: "276076090787",
-            appId: "1:276076090787:web:5c9f7ab3b441c9d0d93616"
-        };
+  <script>
+    // Ocultar loading cuando Flutter pinta el primer frame
+    window.addEventListener('flutter-first-frame', () => {
+      const loading = document.getElementById('loading');
+      const container = document.getElementById('flutter-container');
 
-        // Variables globales
-        window.fcmToken = null;
-        window.notificationPermission = 'default';
-        let firebaseInitialized = false;
-        
-        // Detectar si es móvil
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        // Función para cargar Firebase de forma diferida
-        async function loadFirebase() {
-            if (firebaseInitialized) return;
-            
-            try {
-                // Cargar scripts de Firebase
-                await loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
-                await loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
-                
-                // Inicializar Firebase
-                firebase.initializeApp(firebaseConfig);
-                
-                // Inicializar notificaciones solo si no es móvil o si el usuario lo permite
-                if (!isMobile || (isMobile && await checkMobileNotifications())) {
-                    initializeNotifications();
-                }
-                
-                firebaseInitialized = true;
-                console.log('✅ Firebase inicializado');
-            } catch (error) {
-                console.error('Error cargando Firebase:', error);
-                showError('Error de conexión. Intentando modo offline...');
-            }
-        }
-        
-        // Cargar script dinámicamente
-        function loadScript(src) {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = src;
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        }
-        
-        // Verificar soporte de notificaciones en móvil
-        async function checkMobileNotifications() {
-            if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-                return false;
-            }
-            
-            try {
-                const permission = await Notification.requestPermission();
-                return permission === 'granted';
-            } catch {
-                return false;
-            }
-        }
-        
-        // Inicializar notificaciones
-        function initializeNotifications() {
-            if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-                return;
-            }
-            
-            navigator.serviceWorker.register('firebase-messaging-sw.js')
-                .then((registration) => {
-                    console.log('✅ Service Worker registrado');
-                    
-                    if (firebase.messaging.isSupported()) {
-                        const messaging = firebase.messaging();
-                        messaging.useServiceWorker(registration);
-                        
-                        // Solo obtener token si ya tenemos permiso
-                        if (Notification.permission === 'granted') {
-                            return messaging.getToken({
-                                vapidKey: 'BJyOqkC6hvuUbwyQ7XIaODqBnu6nzQRTJisQe-ppZF10crJEeRmrJHkG4_zB97K0tm6xd8_Q-799RxyPgHRgc84'
-                            }).then(token => {
-                                window.fcmToken = token;
-                                console.log('🔑 Token FCM:', token);
-                            });
-                        }
-                    }
-                })
-                .catch(err => console.error('Error SW:', err));
-        }
-        
-        // Mostrar error
-        function showError(message) {
-            const errorEl = document.getElementById('error-message');
-            if (errorEl) {
-                errorEl.textContent = message;
-                errorEl.style.display = 'block';
-            }
-        }
-        
-        // Ocultar loading y mostrar app
-        function hideLoading() {
-            const loading = document.getElementById('loading');
-            const container = document.getElementById('flutter-container');
-            
-            if (loading) {
-                loading.style.opacity = '0';
-                setTimeout(() => {
-                    loading.style.display = 'none';
-                    if (container) {
-                        container.classList.add('visible');
-                    }
-                }, 300);
-            }
-        }
-        
-        // Inicialización
-        window.addEventListener('load', () => {
-            // Cargar Firebase después de que la app esté lista
-            setTimeout(loadFirebase, 1000);
-        });
-        
-        // Evento de Flutter
-        window.addEventListener('flutter-first-frame', hideLoading);
-        
-        // Timeout de seguridad
+      if (loading) {
+        loading.style.opacity = '0';
         setTimeout(() => {
-            if (document.getElementById('loading').style.display !== 'none') {
-                hideLoading();
-            }
-        }, 5000);
-        
-        // Prevenir reinicio en móvil
-        if (isMobile) {
-            // Prevenir gestos de navegación
-            document.addEventListener('touchstart', (e) => {
-                if (e.touches.length > 1) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-            
-            // Prevenir pull-to-refresh
-            document.body.style.overscrollBehavior = 'none';
-        }
-        
-        // Funciones para Flutter
-        window.getFCMToken = () => window.fcmToken;
-        window.getNotificationPermission = () => Notification.permission;
-        
-        window.requestNotificationPermission = async () => {
-            if (!('Notification' in window)) return 'denied';
-            
-            try {
-                const permission = await Notification.requestPermission();
-                
-                if (permission === 'granted' && firebase.messaging.isSupported()) {
-                    const messaging = firebase.messaging();
-                    const token = await messaging.getToken({
-                        vapidKey: 'BJyOqkC6hvuUbwyQ7XIaODqBnu6nzQRTJisQe-ppZF10crJEeRmrJHkG4_zB97K0tm6xd8_Q-799RxyPgHRgc84'
-                    });
-                    window.fcmToken = token;
-                }
-                
-                return permission;
-            } catch {
-                return 'denied';
-            }
-        };
-        
-        window.showLocalNotification = (title, body, chatId) => {
-            if (Notification.permission === 'granted') {
-                try {
-                    new Notification(title, {
-                        body: body,
-                        icon: 'icons/Icon-192.png',
-                        tag: chatId || 'ghostchat',
-                        vibrate: [200, 100, 200],
-                        silent: false
-                    });
-                } catch (e) {
-                    console.error('Error mostrando notificación:', e);
-                }
-            }
-        };
-    </script>
+          loading.style.display = 'none';
+          if (container) {
+            container.classList.add('visible');
+          }
+        }, 300);
+      }
+    });
 
-    <!-- Flutter Bootstrap (carga al final) -->
-    <script src="flutter_bootstrap.js" defer></script>
+    // Timeout de seguridad (por si flutter-first-frame no se dispara por algún motivo)
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const loading = document.getElementById('loading');
+        const container = document.getElementById('flutter-container');
+        if (loading && loading.style.display !== 'none') {
+          loading.style.opacity = '0';
+          setTimeout(() => {
+            loading.style.display = 'none';
+            if (container) {
+              container.classList.add('visible');
+            }
+          }, 300);
+        }
+      }, 5000);
+    });
+  </script>
+
+  <!-- Arranca Flutter Web -->
+  <script src="flutter_bootstrap.js" defer></script>
 </body>
 </html>
